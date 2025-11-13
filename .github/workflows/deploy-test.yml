@@ -1,0 +1,17 @@
+name: Deploy to TEST
+
+on:
+  push:
+    branches: ["dev"]
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Copy files to TEST Server
+        run: |
+          rsync -avz --delete ./ root@192.168.1.28:/var/www/mini-test
