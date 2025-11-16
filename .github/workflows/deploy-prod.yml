@@ -1,4 +1,4 @@
-name: Deploy to TEST
+name: Deploy to PROD
 
 on:
   push:
@@ -15,7 +15,7 @@ jobs:
       # 1) Create a unique release name using date/time
       - name: Set release name
         run: |
-          echo "RELEASE_NAME=test-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
+          echo "RELEASE_NAME=prod-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
           echo "Release name: $RELEASE_NAME"
 
       # 2) Create the release directory on the TEST server
@@ -38,4 +38,11 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no root@192.168.1.29 \
             "ln -sfn /var/www/mini-prod/releases/$RELEASE_NAME /var/www/mini-prod/current && systemctl reload nginx"
+
+      
+      - name: Cleanup old releases
+        run: |
+          ssh -o StrictHostKeyChecking=no root@192.168.1.29 \
+            "cd /var/www/mini-prod/releases && ls -1t | tail -n +6 | xargs -r rm -rf"
+    
 
