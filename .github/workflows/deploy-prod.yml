@@ -1,4 +1,4 @@
-name: Deploy to PROD
+name: Deploy to TEST
 
 on:
   push:
@@ -9,9 +9,33 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Copy files to PROD Server
+      # 1) Create a unique release name using date/time
+      - name: Set release name
         run: |
-          rsync -avz --delete ./ root@192.168.1.29:/var/www/mini-prod
+          echo "RELEASE_NAME=test-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
+          echo "Release name: $RELEASE_NAME"
+
+      # 2) Create the release directory on the TEST server
+      - name: Create release directory on TEST
+        run: |
+          ssh -o StrictHostKeyChecking=no root@192.168.1.29 \
+            "mkdir -p /var/www/mini-prod/releases/$RELEASE_NAME"
+
+      # 3) Copy ONLY app files to that release
+      - name: Copy app files to new release
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          rsync -avz \
+            index.php \
+            version.txt \
+            root@192.168.1.29:/var/www/mini-prod/releases/$RELEASE_NAME/
+
+      # 4) Switch 'current' symlink to point to the new release + reload nginx
+      - name: Switch current symlink and reload nginx
+        run: |
+          ssh -o StrictHostKeyChecking=no root@192.168.1.29 \
+            "ln -sfn /var/www/mini-prod/releases/$RELEASE_NAME /var/www/mini-prod/current && systemctl reload nginx"
+
