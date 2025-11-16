@@ -9,9 +9,33 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Copy files to TEST Server
+      # 1) Create a unique release name using date/time
+      - name: Set release name
         run: |
-          rsync -avz --delete ./ root@192.168.1.28:/var/www/mini-test
+          echo "RELEASE_NAME=test-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
+          echo "Release name: $RELEASE_NAME"
+
+      # 2) Create the release directory on the TEST server
+      - name: Create release directory on TEST
+        run: |
+          ssh -o StrictHostKeyChecking=no root@192.168.1.28 \
+            "mkdir -p /var/www/mini-test/releases/$RELEASE_NAME"
+
+      # 3) Copy ONLY app files to that release
+      - name: Copy app files to new release
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          rsync -avz \
+            index.php \
+            version.txt \
+            root@192.168.1.28:/var/www/mini-test/releases/$RELEASE_NAME/
+
+      # 4) Switch 'current' symlink to point to the new release + reload nginx
+      - name: Switch current symlink and reload nginx
+        run: |
+          ssh -o StrictHostKeyChecking=no root@192.168.1.28 \
+            "ln -sfn /var/www/mini-test/releases/$RELEASE_NAME /var/www/mini-test/current && systemctl reload nginx"
+
