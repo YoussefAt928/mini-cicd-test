@@ -21,7 +21,7 @@ jobs:
       # 2) Create the release directory on the TEST server
       - name: Create release directory on TEST
         run: |
-          ssh -o StrictHostKeyChecking=no root@192.168.1.28 \
+          ssh -o StrictHostKeyChecking=no root@192.168.1.115 \
             "mkdir -p /var/www/mini-test/releases/$RELEASE_NAME"
 
       # 3) Copy ONLY app files to that release
@@ -31,11 +31,11 @@ jobs:
           rsync -avz \
             index.php \
             version.txt \
-            root@192.168.1.28:/var/www/mini-test/releases/$RELEASE_NAME/
+            root@192.168.1.115:/var/www/mini-test/releases/$RELEASE_NAME/
 
       # 4) Switch 'current' symlink to point to the new release + reload nginx
       - name: Switch current symlink and reload nginx
         run: |
-          ssh -o StrictHostKeyChecking=no root@192.168.1.28 \
+          ssh -o StrictHostKeyChecking=no root@192.168.1.115 \
             "ln -sfn /var/www/mini-test/releases/$RELEASE_NAME /var/www/mini-test/current && systemctl reload nginx"
 
